@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 
 function createClient() {
   const opts = {
-    timeout: 60000,       // 60s timeout (free tier can be slow)
+    timeout: 60000,       // default timeout for idle connections
     maxRetries: 0,        // don't retry on slow responses
   };
 
@@ -27,16 +27,29 @@ function defaultModel() {
 export async function generateSummary({ systemPrompt, userPrompt, model }) {
   try {
     const openai = createClient();
-    const completion = await openai.chat.completions.create({
-      model: model || defaultModel(),
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-    });
+    // Use AbortSignal to enforce a hard total timeout (120s)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120_000);
+
+    const completion = await openai.chat.completions.create(
+      {
+        model: model || defaultModel(),
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      },
+      { signal: controller.signal }
+    );
+
+    clearTimeout(timeoutId);
     return completion.choices[0]?.message?.content ?? 'Summary unavailable.';
   } catch (err) {
-    console.warn(`openai: ${err.message}`);
+    if (err.name === 'AbortError') {
+      console.warn('openai: request timed out after 120s');
+    } else {
+      console.warn(`openai: ${err.message}`);
+    }
     return 'Summary unavailable.';
   }
 }

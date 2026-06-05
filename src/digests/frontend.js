@@ -337,4 +337,4 @@ async function main() {
   console.log('\n=== Done ===\n');
 }
 
-main();
+main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
