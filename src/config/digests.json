@@ -1,0 +1,43 @@
+{
+  "digests": [
+    {
+      "id": "frontend",
+      "name": "Frontend Ecosystem Digest",
+      "schedule": "cron(0 12 * * 1)",
+      "frameworks": [
+        { "name": "React",     "npm": "react",        "owner": "facebook", "repo": "react" },
+        { "name": "Next.js",   "npm": "next",         "owner": "vercel",   "repo": "next.js" },
+        { "name": "Vue",       "npm": "vue",          "owner": "vuejs",    "repo": "core" },
+        { "name": "Nuxt",      "npm": "nuxt",         "owner": "nuxt",     "repo": "nuxt" },
+        { "name": "Astro",     "npm": "astro",        "owner": "withastro","repo": "astro" },
+        { "name": "Svelte",    "npm": "svelte",       "owner": "sveltejs", "repo": "svelte" },
+        { "name": "Angular",   "npm": "@angular/core","owner": "angular",  "repo": "angular" },
+        { "name": "Vite",      "npm": "vite",         "owner": "vitejs",   "repo": "vite" },
+        { "name": "Node.js",   "npm": "node",         "owner": "nodejs",   "repo": "node" }
+      ],
+      "rssFeeds": [
+        "https://javascriptweekly.com/rss/",
+        "https://frontendfocus.dev/issues.rss",
+        "https://react.statuscode.com/issues.rss",
+        "https://dev.to/feed/tag/react",
+        "https://www.smashingmagazine.com/feed/"
+      ],
+      "systemPrompt": "You are a frontend ecosystem analyst. Summarize the week's notable releases and trends in 3-4 sentences.",
+      "archiveFrontmatter": {
+        "type": "frontend",
+        "icon": "🖥️"
+      }
+    },
+    {
+      "id": "rabbit-hole",
+      "name": "Rabbit Hole Digest",
+      "schedule": "cron(0 12 * * 5)",
+      "sources": ["github-trending", "hacker-news", "product-hunt"],
+      "systemPrompt": "You are a curious developer. Generate a fun, engaging newsletter of unexpected discoveries and useful tools. Avoid generic news and marketing-heavy content.",
+      "archiveFrontmatter": {
+        "type": "rabbit-hole",
+        "icon": "🐇"
+      }
+    }
+  ]
+}

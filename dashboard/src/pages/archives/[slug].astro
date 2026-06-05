@@ -1,0 +1,60 @@
+---
+import { Marked } from 'marked';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getAllArchives, getArchiveBySlug } from '../../lib/archives';
+
+export async function getStaticPaths() {
+  const archives = getAllArchives();
+  return archives.map((a) => ({
+    params: { slug: a.slug },
+    props: { archive: a },
+  }));
+}
+
+const { archive } = Astro.props;
+
+if (!archive) {
+  return Astro.redirect('/ai-digests/404');
+}
+
+const marked = new Marked({ gfm: true });
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+const typeConfig = {
+  frontend: { label: 'Frontend Ecosystem', color: 'bg-blue-50 text-blue-700', icon: '🖥️' },
+  'rabbit-hole': { label: 'Rabbit Hole', color: 'bg-purple-50 text-purple-700', icon: '🐇' },
+};
+
+const tc = typeConfig[archive.frontmatter.type as keyof typeof typeConfig] || typeConfig.frontend;
+const htmlContent = await marked.parse(archive.body);
+---
+
+<BaseLayout title={archive.frontmatter.title || 'Digest'} description={`${archive.frontmatter.title} — ${formatDate(archive.frontmatter.date)}`}>
+  <article class="space-y-6">
+    <!-- Back link -->
+    <a href="/ai-digests/" class="inline-flex items-center gap-1 text-sm text-gray-500 no-underline hover:text-gray-900 transition-colors">
+      <span>←</span>
+      <span>Back to all digests</span>
+    </a>
+
+    <!-- Header -->
+    <div class="space-y-3">
+      <span class={['inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium', tc.color].join(' ')}>
+        <span>{tc.icon}</span>
+        <span>{tc.label}</span>
+      </span>
+      <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{archive.frontmatter.title || 'Untitled Digest'}</h1>
+      <p class="text-gray-500">{formatDate(archive.frontmatter.date)}</p>
+    </div>
+
+    <!-- Content (rendered markdown) -->
+    <div class="prose prose-gray max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-code:rounded prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-pre:bg-gray-900 prose-pre:text-gray-100">
+      <div set:html={htmlContent} />
+    </div>
+  </article>
+</BaseLayout>

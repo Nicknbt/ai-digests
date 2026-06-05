@@ -1,0 +1,24 @@
+{
+  "name": "ai-digests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "digest:frontend": "node src/digests/frontend.js",
+    "digest:rabbit-hole": "node src/digests/rabbit-hole.js",
+    "digest:all": "npm run digest:frontend && npm run digest:rabbit-hole",
+    "email:preview": "node src/email/preview.js",
+    "test:services": "node scripts/test-services.mjs"
+  },
+  "dependencies": {
+    "openai": "^4.0.0",
+    "nodemailer": "^6.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@react-email/components": "1.0.12",
+    "rss-parser": "^3.13.0",
+    "marked": "^15.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
