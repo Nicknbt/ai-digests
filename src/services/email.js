@@ -11,7 +11,10 @@ export async function sendEmail({ to, subject, html }) {
     });
 
     const info = await transporter.sendMail({
-      from: process.env.GMAIL_USER,
+      from: {
+        name: 'AI Digests',
+        address: process.env.GMAIL_USER,
+      },
       to,
       subject,
       html,
