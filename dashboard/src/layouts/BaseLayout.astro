@@ -15,7 +15,7 @@ const {
 
 const siteUrl = "https://ntrevino.github.io/ai-digests";
 const currentPath = Astro.url.pathname;
-const ogUrl = `${siteUrl}${currentPath}`;
+const ogUrl = `${siteUrl}${currentPath.replace(/^\/ai-digests/, '')}`;
 const safeTitle = title && title !== 'Home' ? `${title} · AI Digests` : 'AI Digests · Curated Weekly Digests';
 
 const normalizedPath = currentPath.replace(/\/$/, '');
