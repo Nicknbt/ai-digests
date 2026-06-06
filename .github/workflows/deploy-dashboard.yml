@@ -6,7 +6,9 @@ on:
     types: [completed]
   push:
     branches: [main]
-    paths: [archives/**]
+    paths:
+      - archives/**
+      - dashboard/**
   workflow_dispatch:
 
 permissions:
@@ -24,8 +26,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # When triggered by workflow_run, check out the exact commit
-          # that triggered the source workflow
           ref: ${{ github.event.workflow_run.head_branch || github.ref }}
 
       - uses: actions/setup-node@v4
