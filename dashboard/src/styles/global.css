@@ -1,6 +1,127 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
   --color-digest-frontend: oklch(0.55 0.15 250);
   --color-digest-rabbit: oklch(0.6 0.18 330);
+
+  --color-digest-frontend-light: oklch(0.92 0.04 250);
+  --color-digest-rabbit-light: oklch(0.92 0.04 330);
+  --color-digest-frontend-subtle: oklch(0.85 0.06 250);
+  --color-digest-rabbit-subtle: oklch(0.85 0.07 330);
+}
+
+/* Smooth scrolling (respects reduced motion) */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Heading anchor links */
+.prose h2,
+.prose h3 {
+  position: relative;
+}
+
+.prose h2 .anchor,
+.prose h3 .anchor {
+  position: absolute;
+  left: -1.75rem;
+  padding-right: 0.25rem;
+  font-size: 0.75em;
+  font-weight: 400;
+}
+
+.prose .anchor:focus-visible {
+  opacity: 1 !important;
+  outline: 2px solid var(--color-blue-500);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Editorial blockquote styling */
+.prose blockquote {
+  border-left: 3px solid var(--color-digest-frontend);
+  background: var(--color-digest-frontend-light);
+  padding: 1rem 1.5rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+  font-style: normal;
+}
+
+.prose blockquote p:first-child {
+  margin-top: 0;
+}
+
+.prose blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Code block wrapper */
+.code-block-wrapper {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  margin: 1.5rem 0;
+}
+
+.code-block-wrapper .code-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
+}
+
+.code-block-wrapper .code-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.code-block-wrapper .code-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.code-block-wrapper .code-dots span:nth-child(1) {
+  background: #ef4444;
+}
+
+.code-block-wrapper .code-dots span:nth-child(2) {
+  background: #f59e0b;
+}
+
+.code-block-wrapper .code-dots span:nth-child(3) {
+  background: #22c55e;
+}
+
+.code-block-wrapper .code-lang {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Print: remove gradient backgrounds */
+@media print {
+  body {
+    background: white !important;
+  }
 }

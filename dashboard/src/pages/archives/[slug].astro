@@ -5,13 +5,13 @@ import { getAllArchives, getArchiveBySlug } from '../../lib/archives';
 
 export async function getStaticPaths() {
   const archives = getAllArchives();
-  return archives.map((a) => ({
+  return archives.map((a, index) => ({
     params: { slug: a.slug },
-    props: { archive: a },
+    props: { archive: a, archives, currentIndex: index },
   }));
 }
 
-const { archive } = Astro.props;
+const { archive, archives, currentIndex } = Astro.props;
 
 if (!archive) {
   return Astro.redirect('/ai-digests/404');
@@ -25,36 +25,164 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+function readingTime(body: string): number {
+  const words = body.trim().split(/\s+/).length;
+  return Math.max(1, Math.ceil(words / 200));
+}
+
 const typeConfig = {
   frontend: { label: 'Frontend Ecosystem', color: 'bg-blue-50 text-blue-700', icon: '🖥️' },
   'rabbit-hole': { label: 'Rabbit Hole', color: 'bg-purple-50 text-purple-700', icon: '🐇' },
 };
 
 const tc = typeConfig[archive.frontmatter.type as keyof typeof typeConfig] || typeConfig.frontend;
+
+const prev = currentIndex > 0 ? archives[currentIndex - 1] : null;
+const next = currentIndex < archives.length - 1 ? archives[currentIndex + 1] : null;
+
+const renderer = {
+  heading({ text, depth }: { text: string; depth: number }) {
+    if (depth > 3) return `<h${depth}>${text}</h${depth}>`;
+    const slug = text.toLowerCase().replace(/[^\w]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    return `<h${depth} id="${slug}" class="group">
+      <a href="#${slug}" class="anchor opacity-0 group-hover:opacity-100 transition-opacity no-underline text-gray-300 hover:text-gray-500 font-normal">#</a>
+      ${text}
+    </h${depth}>`;
+  },
+  code({ text, lang }: { text: string; lang?: string }) {
+    const langLabel = lang ? `<span class="code-lang">${lang}</span>` : '';
+    const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return `<div class="code-block-wrapper">
+      <div class="code-header">
+        <span class="code-dots"><span></span><span></span><span></span></span>
+        ${langLabel}
+      </div>
+      <pre><code>${escaped}</code></pre>
+    </div>`;
+  },
+};
+
+marked.use({ renderer });
 const htmlContent = await marked.parse(archive.body);
 ---
 
-<BaseLayout title={archive.frontmatter.title || 'Digest'} description={`${archive.frontmatter.title} — ${formatDate(archive.frontmatter.date)}`}>
-  <article class="space-y-6">
-    <!-- Back link -->
-    <a href="/ai-digests/" class="inline-flex items-center gap-1 text-sm text-gray-500 no-underline hover:text-gray-900 transition-colors">
-      <span>←</span>
-      <span>Back to all digests</span>
-    </a>
+<BaseLayout
+  title={archive.frontmatter.title || 'Digest'}
+  description={`${archive.frontmatter.title} — ${formatDate(archive.frontmatter.date)}`}
+  ogType="article"
+>
+  <!-- Scroll progress bar -->
+  <div id="scroll-progress" class="fixed top-0 left-0 right-0 h-0.5 bg-gray-200 z-50">
+    <div id="scroll-progress-bar" class="h-full bg-gradient-to-r from-digest-frontend to-digest-rabbit" style="width: 0%"></div>
+  </div>
 
-    <!-- Header -->
-    <div class="space-y-3">
-      <span class={['inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium', tc.color].join(' ')}>
-        <span>{tc.icon}</span>
-        <span>{tc.label}</span>
-      </span>
-      <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{archive.frontmatter.title || 'Untitled Digest'}</h1>
-      <p class="text-gray-500">{formatDate(archive.frontmatter.date)}</p>
-    </div>
+  <article class="relative mx-auto max-w-3xl overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
+    <!-- Top accent bar -->
+    <div class="h-1 w-full bg-gradient-to-r from-digest-frontend via-purple-400 to-digest-rabbit"></div>
 
-    <!-- Content (rendered markdown) -->
-    <div class="prose prose-gray max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-code:rounded prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-pre:bg-gray-900 prose-pre:text-gray-100">
-      <div set:html={htmlContent} />
+    <div class="space-y-8 px-6 py-8 sm:px-10 sm:py-10">
+      <!-- Breadcrumb -->
+      <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-sm text-gray-500 min-w-0">
+        <a href="/ai-digests/" class="hover:text-gray-900 transition-colors no-underline shrink-0">Digests</a>
+        <svg class="h-3.5 w-3.5 text-gray-300 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+        <a href={`/ai-digests/?type=${archive.frontmatter.type}`} class="hover:text-gray-900 transition-colors no-underline shrink-0">
+          {tc.label}
+        </a>
+        <svg class="h-3.5 w-3.5 text-gray-300 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+        <span class="text-gray-900 font-medium truncate min-w-0" aria-current="page">
+          {archive.frontmatter.title || 'Untitled Digest'}
+        </span>
+      </nav>
+
+      <!-- Header hero -->
+      <div id="header" class="relative space-y-4 border-b border-gray-100 pb-6">
+        <span class={['inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase shadow-sm', tc.color].join(' ')}>
+          <span>{tc.icon}</span>
+          <span>{tc.label}</span>
+        </span>
+        <h1 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl leading-tight break-words">
+          {archive.frontmatter.title || 'Untitled Digest'}
+        </h1>
+        <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+          <time datetime={archive.frontmatter.date} class="flex items-center gap-1.5">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {formatDate(archive.frontmatter.date)}
+          </time>
+          <span class="text-gray-300">·</span>
+          <span class="flex items-center gap-1.5">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+            </svg>
+            {readingTime(archive.body)} min read
+          </span>
+        </div>
+      </div>
+
+      <!-- Content (rendered markdown) -->
+      <div class="prose prose-gray max-w-none
+        prose-h2:mt-10 prose-h2:mb-4 prose-h2:text-2xl
+        prose-h3:mt-8 prose-h3:mb-3
+        prose-p:leading-relaxed
+        prose-li:my-1.5 prose-ul:space-y-3 prose-li:marker:text-gray-300
+        prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
+        prose-strong:font-semibold
+        prose-code:rounded prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:font-normal
+        prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-t-none prose-pre:mt-0
+        prose-table:border-collapse prose-table:w-full prose-table:text-sm
+        prose-th:bg-gray-50 prose-th:text-left prose-th:px-4 prose-th:py-2.5 prose-th:text-xs prose-th:font-semibold prose-th:text-gray-600 prose-th:uppercase prose-th:tracking-wider
+        prose-td:px-4 prose-td:py-2.5 prose-td:border-t prose-td:border-gray-100
+        prose-tr:even:bg-gray-50/50
+        prose-hr:my-12 prose-hr:border-0 prose-hr:h-px prose-hr:bg-gradient-to-r prose-hr:from-transparent prose-hr:via-gray-200 prose-hr:to-transparent
+      ">
+        <div set:html={htmlContent} />
+      </div>
+
+      <!-- Footer navigation with prev/next -->
+      <div class="flex items-center justify-between border-t border-gray-100 pt-8 min-h-[2.5rem]">
+        <div class="min-w-0 flex-1">
+          {prev ? (
+            <a
+              href={`/ai-digests/archives/${prev.slug}`}
+              class="inline-flex items-center gap-2 text-sm font-medium text-gray-500 no-underline hover:text-digest-frontend transition-colors group rounded-lg px-3 py-2 -ml-3 hover:bg-digest-frontend/5"
+            >
+              <svg class="h-3.5 w-3.5 shrink-0 transition-transform group-hover:-translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5m7-7l-7 7 7 7" />
+              </svg>
+              <span class="truncate">{prev.frontmatter.title}</span>
+            </a>
+          ) : <span />}
+        </div>
+        <div class="min-w-0 flex-1 text-right">
+          {next ? (
+            <a
+              href={`/ai-digests/archives/${next.slug}`}
+              class="inline-flex items-center gap-2 text-sm font-medium text-gray-500 no-underline hover:text-digest-frontend transition-colors group rounded-lg px-3 py-2 -mr-3 hover:bg-digest-frontend/5"
+            >
+              <span class="truncate">{next.frontmatter.title}</span>
+              <svg class="h-3.5 w-3.5 shrink-0 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14m-7-7l7 7-7 7" />
+              </svg>
+            </a>
+          ) : <span />}
+        </div>
+      </div>
     </div>
   </article>
 </BaseLayout>
+
+<script>
+  const bar = document.getElementById('scroll-progress-bar');
+  if (bar) {
+    window.addEventListener('scroll', () => {
+      const scrollTop = document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      bar.style.width = scrollHeight > 0 ? `${(scrollTop / scrollHeight) * 100}%` : '0%';
+    }, { passive: true });
+  }
+</script>

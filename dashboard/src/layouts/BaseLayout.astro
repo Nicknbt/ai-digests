@@ -4,50 +4,102 @@ import '../styles/global.css';
 export interface Props {
   title: string;
   description?: string;
+  ogType?: string;
 }
 
-const { title, description = "Curated AI-powered digests delivered weekly" } = Astro.props;
+const {
+  title,
+  description = "Curated AI-powered digests delivered weekly",
+  ogType = "website",
+} = Astro.props;
+
+const siteUrl = "https://ntrevino.github.io/ai-digests";
+const currentPath = Astro.url.pathname;
+const ogUrl = `${siteUrl}${currentPath}`;
+const safeTitle = title && title !== 'Home' ? `${title} · AI Digests` : 'AI Digests · Curated Weekly Digests';
+
+const normalizedPath = currentPath.replace(/\/$/, '');
+const isHome = normalizedPath === '/ai-digests' || normalizedPath === '';
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <title>{title} · AI Digests</title>
+    <title>{safeTitle}</title>
     <link rel="icon" type="image/svg+xml" href="/ai-digests/favicon.svg" />
     <link rel="alternate" type="application/rss+xml" title="AI Digests RSS Feed" href="/ai-digests/rss.xml" />
+    <!-- Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Open Graph -->
+    <meta property="og:title" content={safeTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={ogUrl} />
+    <meta name="twitter:card" content="summary" />
   </head>
-  <body class="min-h-screen bg-gray-50 text-gray-900 antialiased">
-    <header class="border-b border-gray-200 bg-white">
+  <body class="min-h-screen bg-gradient-to-br from-white via-digest-frontend-light to-digest-rabbit-light text-gray-900 antialiased">
+    <!-- Skip to content -->
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-white focus:text-blue-600 focus:rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+    >
+      Skip to content
+    </a>
+
+    <header class="border-b border-gray-100 bg-white/80 backdrop-blur-sm shadow-[0_1px_3px_-1px_rgba(0,0,0,0.05)]">
       <div class="mx-auto flex max-w-5xl items-center gap-3 px-4 py-4 sm:px-6">
         <a href="/ai-digests/" class="flex items-center gap-3 no-underline">
-          <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 text-lg font-bold text-white shadow-sm">AI</span>
+          <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-digest-frontend to-digest-rabbit text-lg font-bold text-white shadow-md ring-1 ring-white/20 ring-inset">AI</span>
           <div>
             <h1 class="text-lg font-bold tracking-tight">AI Digests</h1>
-            <p class="-mt-0.5 text-xs text-gray-500">Curated weekly digests</p>
+            <p class="text-xs font-medium text-digest-frontend/60 leading-tight tracking-wide uppercase">Curated weekly digests</p>
           </div>
         </a>
         <nav class="ml-auto flex items-center gap-4 text-sm">
-          <a href="/ai-digests/" class="text-gray-600 no-underline hover:text-gray-900 transition-colors">Home</a>
-          <a href="/ai-digests/rss.xml" class="text-gray-600 no-underline hover:text-gray-900 transition-colors flex items-center gap-1">
-            <span class="text-orange-500">RSS</span>
+          <a
+            href="/ai-digests/"
+            class={[
+              'no-underline transition-colors',
+              isHome ? 'font-semibold text-gray-900' : 'text-gray-600 hover:text-digest-frontend',
+            ].join(' ')}
+            aria-current={isHome ? 'page' : undefined}
+          >
+            Home
+          </a>
+          <a
+            href="/ai-digests/rss.xml"
+            class="text-gray-600 no-underline hover:text-digest-frontend transition-colors flex items-center gap-1"
+          >
+            <svg class="h-3.5 w-3.5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6.18 15.64a2.18 2.18 0 010 4.36 2.18 2.18 0 010-4.36M4 4.44A15.56 15.56 0 0119.56 20h-2.83A12.73 12.73 0 004 7.27V4.44m0 5.66a9.9 9.9 0 019.9 9.9h-2.83A7.07 7.07 0 004 12.93v-2.83z" />
+            </svg>
+            <span>RSS</span>
           </a>
         </nav>
       </div>
     </header>
 
-    <main class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+    <main id="main-content" class="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <slot />
     </main>
 
-    <footer class="border-t border-gray-200 bg-white">
-      <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6">
-        <p class="text-center text-xs text-gray-400">
-          Generated by <a href="https://github.com/ntrevino/ai-digests" class="text-gray-500 underline underline-offset-2 hover:text-gray-700">AI Digests</a>
-          · Powered by OpenCode Zen
-        </p>
+    <footer class="border-t border-gray-100 bg-white/80 backdrop-blur-sm">
+      <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+        <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+          <div class="flex items-center gap-3">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-digest-frontend to-digest-rabbit text-xs font-bold text-white">AI</span>
+            <span class="text-sm text-gray-400">AI Digests</span>
+          </div>
+          <p class="text-xs text-gray-400">
+            Generated by <a href="https://github.com/ntrevino/ai-digests" class="text-gray-500 underline underline-offset-2 hover:text-digest-frontend transition-colors">AI Digests</a>
+            · Powered by OpenCode Zen
+          </p>
+        </div>
       </div>
     </footer>
   </body>

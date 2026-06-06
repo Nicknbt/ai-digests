@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import FilterBar from '../components/FilterBar.tsx';
 import { getAllArchives } from '../lib/archives.js';
 
 const archives = getAllArchives();
@@ -19,44 +18,62 @@ function formatDate(dateStr: string) {
 
 function excerpt(body: string, max = 160) {
   const text = body
-    .replace(/^#+\s+.*$/gm, '')     // strip headings
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // strip markdown links
-    .replace(/[*_~`#|>-]/g, '')     // strip other markdown
-    .replace(/\s+/g, ' ')           // collapse whitespace
+    .replace(/^#+\s+.*$/gm, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/[*_~`#|>-]/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
   if (text.length <= max) return text;
   return text.slice(0, max).trimEnd() + '…';
 }
 ---
 
-<BaseLayout title="Home">
-  <div class="space-y-8">
+<BaseLayout title="Home" description="A collection of weekly AI-generated digests covering the frontend ecosystem and interesting internet discoveries.">
+  <div class="space-y-10">
     <!-- Hero -->
-    <div class="space-y-2">
-      <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Digest Archive</h2>
-      <p class="text-gray-500">
+    <div class="space-y-4">
+      <h2 class="text-4xl font-bold tracking-tight sm:text-5xl">Digest Archive</h2>
+      <p class="text-base text-gray-500 sm:text-lg max-w-2xl">
         A collection of weekly AI-generated digests covering the frontend ecosystem and interesting internet discoveries.
       </p>
+      <div class="h-1 w-12 rounded-full bg-gradient-to-r from-digest-frontend to-digest-rabbit"></div>
     </div>
 
-    <!-- Filter -->
-    <div class="not-content" client:load>
-      <FilterBar
-        counts={counts}
-        onChange={() => {}} /* handled via DOM in DigestGrid */
-        client:load
-      />
+    <!-- Filter (vanilla JS) -->
+    <div id="filter-bar" class="flex flex-wrap gap-2">
+      <button data-filter="all" class="filter-btn flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all bg-gray-900 text-white shadow-sm">
+        <span>📋</span>
+        <span>All Digests</span>
+        <span class="ml-0.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums bg-white/20 text-white">{counts.all}</span>
+      </button>
+      <button data-filter="frontend" class="filter-btn flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all bg-white text-gray-600 ring-1 ring-inset ring-gray-200 hover:bg-gray-50">
+        <span>🖥️</span>
+        <span>Frontend</span>
+        <span class="ml-0.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums bg-gray-100 text-gray-500">{counts.frontend}</span>
+      </button>
+      <button data-filter="rabbit-hole" class="filter-btn flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all bg-white text-gray-600 ring-1 ring-inset ring-gray-200 hover:bg-gray-50">
+        <span>🐇</span>
+        <span>Rabbit Hole</span>
+        <span class="ml-0.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums bg-gray-100 text-gray-500">{counts['rabbit-hole']}</span>
+      </button>
     </div>
 
     <!-- Digest Grid -->
-    <div id="digest-grid" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div id="digest-grid" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {archives.map((a) => (
         <a
           href={`/ai-digests/archives/${a.slug}`}
-          class="group relative flex flex-col rounded-xl border border-gray-200 bg-white p-5 no-underline shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
+          data-type={a.frontmatter.type}
+          class="group relative flex flex-col rounded-xl bg-white p-5 no-underline shadow-sm ring-1 ring-gray-200 transition-all hover:shadow-lg hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 overflow-hidden"
         >
+          <!-- Colored top strip -->
+          <div class={[
+            'absolute top-0 left-0 right-0 h-1 rounded-t-xl',
+            a.frontmatter.type === 'frontend' ? 'bg-digest-frontend' : 'bg-digest-rabbit',
+          ].join(' ')}></div>
+
           <!-- Type badge -->
-          <div class="mb-3 flex items-center gap-2">
+          <div class="mb-3 flex items-center gap-2 relative z-10">
             <span class={[
               'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
               a.frontmatter.type === 'frontend'
@@ -69,7 +86,7 @@ function excerpt(body: string, max = 160) {
           </div>
 
           <!-- Title -->
-          <h3 class="mb-1 text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+          <h3 class="mb-2 text-base font-semibold text-gray-900 group-hover:text-digest-frontend transition-colors">
             {a.frontmatter.title || 'Untitled Digest'}
           </h3>
 
@@ -79,22 +96,68 @@ function excerpt(body: string, max = 160) {
           </p>
 
           <!-- Excerpt -->
-          <p class="mt-auto text-sm leading-relaxed text-gray-600 line-clamp-3">
+          <p class="mt-auto text-sm leading-relaxed text-gray-500 line-clamp-2">
             {excerpt(a.body)}
           </p>
 
           <!-- Arrow indicator -->
-          <span class="mt-3 text-sm font-medium text-blue-600 opacity-0 transition-opacity group-hover:opacity-100">
+          <span class="mt-3 text-sm font-medium text-digest-frontend/70 group-hover:text-digest-frontend transition-colors">
             Read more →
           </span>
         </a>
       ))}
     </div>
 
+    <!-- Empty state (no archives at all) -->
     {archives.length === 0 && (
       <div class="rounded-xl border-2 border-dashed border-gray-200 p-12 text-center">
         <p class="text-lg text-gray-400">No digests yet — archives will appear here after the first run.</p>
       </div>
     )}
+
+    <!-- Filter empty state -->
+    <div id="filter-empty" class="rounded-xl border-2 border-dashed border-gray-200 p-12 text-center hidden">
+      <p class="text-lg text-gray-400">No digests match this filter.</p>
+    </div>
   </div>
 </BaseLayout>
+
+<script>
+  (function() {
+    const buttons = document.querySelectorAll('#filter-bar .filter-btn');
+    const cards = document.querySelectorAll('#digest-grid > a');
+    const filterEmpty = document.getElementById('filter-empty');
+
+    function setActiveClass(btn, isActive) {
+      const filter = btn.dataset.filter;
+      if (isActive) {
+        if (filter === 'all') {
+          btn.className = 'filter-btn flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all bg-gray-900 text-white shadow-sm';
+        } else if (filter === 'frontend') {
+          btn.className = 'filter-btn flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all bg-digest-frontend text-white shadow-sm';
+        } else {
+          btn.className = 'filter-btn flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all bg-digest-rabbit text-white shadow-sm';
+        }
+      } else {
+        btn.className = 'filter-btn flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all bg-white text-gray-600 ring-1 ring-inset ring-gray-200 hover:bg-gray-50';
+      }
+    }
+
+    function applyFilter(filter) {
+      let visibleCount = 0;
+      cards.forEach(card => {
+        const match = filter === 'all' || card.dataset.type === filter;
+        card.classList.toggle('hidden', !match);
+        if (match) visibleCount++;
+      });
+      if (filterEmpty) {
+        filterEmpty.classList.toggle('hidden', visibleCount > 0 || cards.length === 0);
+      }
+      buttons.forEach(btn => setActiveClass(btn, btn.dataset.filter === filter));
+    }
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => applyFilter(btn.dataset.filter));
+    });
+  })();
+</script>
